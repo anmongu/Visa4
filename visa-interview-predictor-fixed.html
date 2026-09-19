@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visa Interview Predictor</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f2f6ff;margin:0;padding:20px;color:#172033}
+.container{max-width:760px;margin:auto}
+.card{background:#fff;padding:22px;border-radius:18px;margin-bottom:18px;box-shadow:0 5px 20px #0001}
+h1{margin-top:0}
+label{display:block;font-weight:bold;margin-top:15px;margin-bottom:6px}
+input,select{width:100%;padding:13px;border:1px solid #ccd3e0;border-radius:10px;font-size:16px}
+button{width:100%;padding:14px;border:0;border-radius:10px;background:#2457d6;color:white;font-size:16px;font-weight:bold;margin-top:20px}
+button:hover{opacity:.9}
+#result{display:none}
+.question{border:1px solid #e0e4ec;border-radius:12px;padding:15px;margin:12px 0;background:#fafbff}
+.category{display:inline-block;background:#e8efff;color:#2457d6;padding:5px 9px;border-radius:20px;font-size:12px;font-weight:bold;margin-bottom:8px}
+.answer{margin-top:12px;width:100%;min-height:65px;padding:10px;border:1px solid #ddd;border-radius:8px;resize:vertical;font-size:14px}
+#status{margin-top:15px;text-align:center;font-weight:bold}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="card">
+<h1>🎫 Visa Interview Predictor</h1>
+<p>Nhập thông tin rồi bấm nút bên dưới để tạo câu hỏi phỏng vấn.</p>
+
+<label>Quốc gia muốn xin visa</label>
+<input id="country" placeholder="Ví dụ: Mỹ">
+
+<label>Mục đích chuyến đi</label>
+<select id="purpose">
+<option>Du lịch</option>
+<option>Thăm thân</option>
+<option>Công tác</option>
+<option>Du học</option>
+<option>Khác</option>
+</select>
+
+<label>Thời gian dự kiến</label>
+<input id="duration" placeholder="Ví dụ: 10 ngày">
+
+<label>Nghề nghiệp / học tập</label>
+<input id="job" placeholder="Ví dụ: học sinh, sinh viên, nhân viên văn phòng">
+
+<button type="button" id="createBtn">🎯 TẠO BỘ CÂU HỎI</button>
+<div id="status"></div>
+</div>
+
+<div class="card" id="result">
+<h2>📋 Câu hỏi phỏng vấn</h2>
+<p id="info"></p>
+<div id="questions"></div>
+<button type="button" id="newBtn">🔄 TẠO BỘ CÂU HỎI KHÁC</button>
+</div>
+
+<div class="card">
+<b>⚠️ Lưu ý:</b>
+<p>Công cụ này chỉ dùng để luyện phỏng vấn. Không có bộ câu hỏi nào bảo đảm đậu visa. Hãy trả lời trung thực và nhất quán với hồ sơ.</p>
+</div>
+
+</div>
+
+<script>
+(function(){
+
+const BANK = [
+["Mục đích","Bạn sang quốc gia này để làm gì?"],
+["Mục đích","Tại sao bạn chọn quốc gia này?"],
+["Mục đích","Tại sao bạn đi vào thời điểm này?"],
+["Mục đích","Bạn đã chuẩn bị chuyến đi này từ bao lâu?"],
+["Lịch trình","Bạn dự định ở bao lâu?"],
+["Lịch trình","Bạn sẽ đi những thành phố nào?"],
+["Lịch trình","Bạn dự định làm gì trong chuyến đi?"],
+["Lịch trình","Bạn sẽ ở đâu trong thời gian ở nước ngoài?"],
+["Lịch trình","Bạn đã đặt vé máy bay chưa?"],
+["Lịch trình","Bạn đã đặt khách sạn chưa?"],
+["Tài chính","Ai sẽ trả tiền cho chuyến đi?"],
+["Tài chính","Bạn dự kiến chi bao nhiêu tiền?"],
+["Tài chính","Nguồn tiền của bạn đến từ đâu?"],
+["Tài chính","Nếu chuyến đi phát sinh thêm chi phí thì sao?"],
+["Tài chính","Bạn có tiết kiệm để thực hiện chuyến đi không?"],
+["Công việc","Hiện tại bạn đang làm gì?"],
+["Công việc","Bạn làm công việc này được bao lâu rồi?"],
+["Công việc","Thu nhập của bạn hiện tại là bao nhiêu?"],
+["Công việc","Bạn đã xin nghỉ phép cho chuyến đi chưa?"],
+["Học tập","Bạn đang học trường nào?"],
+["Học tập","Bạn đang học ngành gì?"],
+["Học tập","Sau chuyến đi bạn có quay lại học không?"],
+["Gia đình","Gia đình bạn hiện đang ở đâu?"],
+["Gia đình","Bạn có anh chị em không?"],
+["Gia đình","Gia đình có biết về chuyến đi này không?"],
+["Người thân","Bạn có người thân ở quốc gia đó không?"],
+["Người thân","Bạn có bạn bè ở quốc gia đó không?"],
+["Lịch sử du lịch","Bạn đã từng đi nước ngoài chưa?"],
+["Lịch sử du lịch","Bạn từng được cấp visa nước nào chưa?"],
+["Lịch sử du lịch","Bạn từng bị từ chối visa chưa?"],
+["Trở về","Sau chuyến đi bạn sẽ làm gì?"],
+["Trở về","Điều gì khiến bạn quay trở lại Việt Nam?"],
+["Trở về","Bạn có công việc hoặc việc học đang chờ ở Việt Nam không?"],
+["Tình huống","Nếu chuyến bay bị hủy, bạn sẽ làm gì?"],
+["Tình huống","Nếu bị mất hộ chiếu ở nước ngoài, bạn sẽ làm gì?"],
+["Tình huống","Nếu bị lạc ở một thành phố xa lạ, bạn sẽ làm gì?"],
+["Tình huống","Nếu khách sạn hết phòng khi bạn đến nơi, bạn xử lý thế nào?"],
+["Tình huống","Nếu bạn bị mất điện thoại, bạn sẽ làm gì?"],
+["Tình huống","Nếu hành lý bị thất lạc, bạn sẽ làm gì?"],
+["Tình huống","Nếu ngân sách thấp hơn dự kiến, bạn sẽ làm gì?"],
+["Tình huống","Nếu người đi cùng muốn thay đổi lịch trình, bạn xử lý thế nào?"],
+["Tình huống","Nếu bạn bị ốm trong chuyến đi, bạn sẽ làm gì?"],
+["Tình huống","Nếu gặp vấn đề với khách sạn, bạn sẽ xử lý thế nào?"],
+["Thông tin cá nhân","Bạn hãy giới thiệu ngắn gọn về bản thân."],
+["Thông tin cá nhân","Bạn đã chuẩn bị những giấy tờ gì?"],
+["Thông tin cá nhân","Bạn có thể mô tả kế hoạch chuyến đi trong 1 phút không?"]
+];
+
+function randomQuestions(country,purpose,duration,job){
+
+let custom = [
+["Cá nhân hóa","Tại sao bạn muốn "+purpose.toLowerCase()+" tại "+country+"?"],
+["Cá nhân hóa","Bạn sẽ làm gì trong "+duration+" ở "+country+"?"],
+["Cá nhân hóa","Bạn có thể nói rõ hơn về công việc/học tập hiện tại: "+job+"?"],
+["Cá nhân hóa","Vì sao thời gian "+duration+" phù hợp với kế hoạch của bạn?"]
+];
+
+let all = BANK.concat(custom);
+
+// Fisher-Yates shuffle
+for(let i=all.length-1;i>0;i--){
+let j=Math.floor(Math.random()*(i+1));
+[all[i],all[j]]=[all[j],all[i]];
+}
+
+return all.slice(0,15);
+}
+
+function create(){
+const country=document.getElementById("country").value.trim() || "quốc gia bạn chọn";
+const purpose=document.getElementById("purpose").value;
+const duration=document.getElementById("duration").value.trim() || "thời gian dự kiến";
+const job=document.getElementById("job").value.trim() || "công việc/học tập hiện tại";
+
+const list=randomQuestions(country,purpose,duration,job);
+const box=document.getElementById("questions");
+
+box.innerHTML="";
+
+list.forEach(function(q,index){
+const div=document.createElement("div");
+div.className="question";
+div.innerHTML=
+'<div class="category">'+q[0]+'</div>'+
+'<div><strong>'+(index+1)+". "+q[1]+'</strong></div>'+
+'<textarea class="answer" placeholder="Bạn thử trả lời câu này ở đây..."></textarea>';
+box.appendChild(div);
+});
+
+document.getElementById("info").textContent=
+"Đang luyện phỏng vấn: "+country+" • "+purpose+" • "+duration;
+
+document.getElementById("status").textContent="✅ Đã tạo 15 câu hỏi!";
+document.getElementById("result").style.display="block";
+
+setTimeout(function(){
+document.getElementById("result").scrollIntoView({behavior:"smooth"});
+},50);
+}
+
+document.getElementById("createBtn").addEventListener("click",create);
+document.getElementById("newBtn").addEventListener("click",create);
+
+})();
+</script>
+</body>
+</html>
